@@ -1,2 +1,2 @@
-# df-tileset-gen
+# DF Tileset Generator
 Tileset generator for Dwarf Fortress
