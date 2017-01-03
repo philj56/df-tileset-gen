@@ -1,14 +1,18 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf8 -*-
 
 from gimpfu import *
 import gimpenums
 import gimpcolor
+import inspect
 
-def plugin_main(img, tdrawable, font, size):
+gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
+
+def generate_tileset(img, drawable, font, size):
 
     gimp.context_push()
     img.undo_group_start()
+    pdb.gimp_progress_init("Generating tileset...", None);
 
     chars = [" ","☺","☻","♥","♦","♣","♠","•","◘","○","◙","♂","♀","♪","♫","☼",
             "►","◄","↕","‼","¶","§","▬","↨","↑","↓","→","←","∟","↔","▲","▼",
@@ -31,17 +35,21 @@ def plugin_main(img, tdrawable, font, size):
     for i in xrange(16):
         for j in xrange(16):
             index = j + 16 * i
-            if not index in excepts:
-                layer = pdb.gimp_text_layer_new(img, chars[index],
-                        font, size * 3/4, gimpenums.UNIT_PIXEL)
-                pdb.gimp_image_insert_layer(img, layer, None, -1)
-                pdb.gimp_layer_translate(layer, j * size, i * size)
-                w = pdb.gimp_drawable_width(layer)
-                pdb.gimp_layer_translate(layer, (size - w) / 2, 0)
-                pdb.gimp_text_layer_set_color(layer, gimpcolor.RGB(0.0, 0.0,
-                    0.0, 1.0))
-                pdb.gimp_invert(layer)
-    pdb.gimp_image_resize_to_layers(img)
+            if index in excepts:
+                continue
+
+            layer = pdb.gimp_text_layer_new(img, chars[index],
+                    font, size * 3/4, gimpenums.UNIT_PIXEL)
+            pdb.gimp_image_insert_layer(img, layer, None, -1)
+            pdb.gimp_layer_translate(layer, j * size, i * size)
+            w = pdb.gimp_drawable_width(layer)
+            pdb.gimp_layer_translate(layer, (size - w) / 2, 0)
+            pdb.gimp_text_layer_set_color(layer, gimpcolor.RGB(0.0, 0.0,
+                0.0, 1.0))
+            pdb.gimp_invert(layer)
+            pdb.gimp_progress_update((j + 16.0 * i) / 255.0)
+            print ((j + 16.0 * i) / 255.0)
+    pdb.gimp_image_resize(img, 16 * size, 16 * size, 0, 0)
     pdb.gimp_image_grid_set_spacing(img, size, size)
 
     img.undo_group_end()
@@ -61,6 +69,6 @@ register(
             (PF_INT, "size", "Size", 72)
         ],
         [],
-        plugin_main)
+        generate_tileset)
 
 main()
