@@ -6,7 +6,10 @@ import gimpenums
 import gimpcolor
 
 def plugin_main(img, tdrawable, font, size):
-    #size = 72
+
+    gimp.context_push()
+    img.undo_group_start()
+
     chars = [" ","☺","☻","♥","♦","♣","♠","•","◘","○","◙","♂","♀","♪","♫","☼",
             "►","◄","↕","‼","¶","§","▬","↨","↑","↓","→","←","∟","↔","▲","▼",
             " ","!","\"","#","$","%","&","'","(",")","*","+",",","-",".","/",
@@ -24,6 +27,7 @@ def plugin_main(img, tdrawable, font, size):
             "α","ß","Γ","π","Σ","σ","τ","Φ","Θ","Ω","δ","∞","φ","ε","∩","≡",
             "±","≥","≤","⌠","⌡","÷","≈","°","∙","·","√","ⁿ","²","■"," "," "]
     excepts = [0, 32, 254, 255]
+
     for i in xrange(16):
         for j in xrange(16):
             index = j + 16 * i
@@ -34,9 +38,14 @@ def plugin_main(img, tdrawable, font, size):
                 pdb.gimp_layer_translate(layer, j * size, i * size)
                 w = pdb.gimp_drawable_width(layer)
                 pdb.gimp_layer_translate(layer, (size - w) / 2, 0)
+                pdb.gimp_text_layer_set_color(layer, gimpcolor.RGB(0.0, 0.0,
+                    0.0, 1.0))
                 pdb.gimp_invert(layer)
     pdb.gimp_image_resize_to_layers(img)
     pdb.gimp_image_grid_set_spacing(img, size, size)
+
+    img.undo_group_end()
+    gimp.context_pop()
 
 register(
         "python_fu_df_tileset",
