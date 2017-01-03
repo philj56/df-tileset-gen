@@ -40,9 +40,9 @@ def generate_tileset(cur_img, drawable, font, size):
             continue
 
         layer = pdb.gimp_text_layer_new(img, chars[i],
-                font, size * 3/4, gimpenums.UNIT_PIXEL)
+                font, size * 3/4, gimpenums.UNIT_POINT)
         pdb.gimp_image_insert_layer(img, layer, None, -1)
-        pdb.gimp_layer_translate(layer, (i % 16) * size, math.floor(i / 16) * size)
+        pdb.gimp_layer_translate(layer, (i % 16) * size, math.floor(i / 16.0) * size)
         w = pdb.gimp_drawable_width(layer)
         pdb.gimp_layer_translate(layer, (size - w) / 2.0, 0)
         pdb.gimp_text_layer_set_color(layer, gimpcolor.RGB(0.0, 0.0, 0.0, 1.0))
