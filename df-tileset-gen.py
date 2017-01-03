@@ -3,9 +3,10 @@
 
 from gimpfu import *
 import gimpenums
+import gimpcolor
 
-def plugin_main(img, tdrawable):
-    size = 72
+def plugin_main(img, tdrawable, font, size):
+    #size = 72
     chars = [" ","☺","☻","♥","♦","♣","♠","•","◘","○","◙","♂","♀","♪","♫","☼",
             "►","◄","↕","‼","¶","§","▬","↨","↑","↓","→","←","∟","↔","▲","▼",
             " ","!","\"","#","$","%","&","'","(",")","*","+",",","-",".","/",
@@ -28,11 +29,12 @@ def plugin_main(img, tdrawable):
             index = j + 16 * i
             if not index in excepts:
                 layer = pdb.gimp_text_layer_new(img, chars[index],
-                        "Roboto Mono", size * 3/4, gimpenums.UNIT_PIXEL)
-                pdb.gimp_layer_translate(layer, j * size, i * size)
+                        font, size * 3/4, gimpenums.UNIT_PIXEL)
                 pdb.gimp_image_insert_layer(img, layer, None, -1)
+                pdb.gimp_layer_translate(layer, j * size, i * size)
                 w = pdb.gimp_drawable_width(layer)
                 pdb.gimp_layer_translate(layer, (size - w) / 2, 0)
+                pdb.gimp_invert(layer)
     pdb.gimp_image_resize_to_layers(img)
     pdb.gimp_image_grid_set_spacing(img, size, size)
 
@@ -45,7 +47,10 @@ register(
         "2017",
         "<Image>/Filters/Render/DF tileset generator...",
         "RGB*, GRAY*",
-        [],
+        [
+            (PF_FONT, "font", "Font", "DejaVu Sans Mono"),
+            (PF_INT, "size", "Size", 72)
+        ],
         [],
         plugin_main)
 
