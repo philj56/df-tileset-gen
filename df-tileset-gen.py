@@ -4,7 +4,7 @@
 from gimpfu import *
 import gimpenums
 import gimpcolor
-import inspect
+import math
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
@@ -31,25 +31,24 @@ def generate_tileset(cur_img, drawable, font, size):
             "╨","╤","╥","╙","╘","╒","╓","╫","╪","┘","┌","█","▄","▌","▐","▀",
             "α","ß","Γ","π","Σ","σ","τ","Φ","Θ","Ω","δ","∞","φ","ε","∩","≡",
             "±","≥","≤","⌠","⌡","÷","≈","°","∙","·","√","ⁿ","²","■"," "," "]
+
+    # Skip blank cells, as Gimp errors on drawing these
     excepts = [0, 32, 254, 255]
 
-    for i in xrange(16):
-        for j in xrange(16):
-            index = j + 16 * i
-            if index in excepts:
-                continue
+    for i in xrange(256):
+        if i in excepts:
+            continue
 
-            layer = pdb.gimp_text_layer_new(img, chars[index],
-                    font, size * 3/4, gimpenums.UNIT_PIXEL)
-            pdb.gimp_image_insert_layer(img, layer, None, -1)
-            pdb.gimp_layer_translate(layer, j * size, i * size)
-            w = pdb.gimp_drawable_width(layer)
-            pdb.gimp_layer_translate(layer, (size - w) / 2, 0)
-            pdb.gimp_text_layer_set_color(layer, gimpcolor.RGB(0.0, 0.0,
-                0.0, 1.0))
-            pdb.gimp_invert(layer)
-            pdb.gimp_progress_update((j + 16.0 * i) / 255.0)
-            print ((j + 16.0 * i) / 255.0)
+        layer = pdb.gimp_text_layer_new(img, chars[i],
+                font, size * 3/4, gimpenums.UNIT_PIXEL)
+        pdb.gimp_image_insert_layer(img, layer, None, -1)
+        pdb.gimp_layer_translate(layer, (i % 16) * size, math.floor(i / 16) * size)
+        w = pdb.gimp_drawable_width(layer)
+        pdb.gimp_layer_translate(layer, (size - w) / 2.0, 0)
+        pdb.gimp_text_layer_set_color(layer, gimpcolor.RGB(0.0, 0.0, 0.0, 1.0))
+        pdb.gimp_invert(layer)
+        pdb.gimp_progress_update(i / 255.0)
+
     pdb.gimp_image_grid_set_spacing(img, size, size)
 
     img.undo_group_end()
@@ -68,7 +67,7 @@ register(
         [
             (PF_FONT, "font", "Font", "DejaVu Sans Mono"),
             (PF_INT, "size", "Tile size (px)", 72)
-        ],
+            ],
         [],
         generate_tileset)
 
