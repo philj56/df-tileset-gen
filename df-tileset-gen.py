@@ -8,9 +8,10 @@ import inspect
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
-def generate_tileset(img, drawable, font, size):
+def generate_tileset(cur_img, drawable, font, size):
 
     gimp.context_push()
+    img = pdb.gimp_image_new(16 * size, 16 * size, gimpenums.GRAY)
     img.undo_group_start()
     pdb.gimp_progress_init("Generating tileset...", None);
 
@@ -49,10 +50,10 @@ def generate_tileset(img, drawable, font, size):
             pdb.gimp_invert(layer)
             pdb.gimp_progress_update((j + 16.0 * i) / 255.0)
             print ((j + 16.0 * i) / 255.0)
-    pdb.gimp_image_resize(img, 16 * size, 16 * size, 0, 0)
     pdb.gimp_image_grid_set_spacing(img, size, size)
 
     img.undo_group_end()
+    pdb.gimp_display_new(img)
     gimp.context_pop()
 
 register(
@@ -66,7 +67,7 @@ register(
         "RGB*, GRAY*",
         [
             (PF_FONT, "font", "Font", "DejaVu Sans Mono"),
-            (PF_INT, "size", "Size", 72)
+            (PF_INT, "size", "Tile size (px)", 72)
         ],
         [],
         generate_tileset)
