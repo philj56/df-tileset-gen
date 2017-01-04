@@ -2,16 +2,15 @@
 # -*- coding: utf8 -*-
 
 from gimpfu import *
-import gimpenums
 import gimpcolor
 import math
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
-def generate_tileset(cur_img, drawable, font, size):
+def generate_tileset(cur_img, drawable, font, size, softening):
 
     gimp.context_push()
-    img = pdb.gimp_image_new(16 * size, 16 * size, gimpenums.GRAY)
+    img = pdb.gimp_image_new(16 * size, 16 * size, GRAY)
     img.undo_group_start()
     pdb.gimp_progress_init("Generating tileset...", None);
 
@@ -35,19 +34,39 @@ def generate_tileset(cur_img, drawable, font, size):
     # Skip blank cells, as Gimp errors on drawing these
     excepts = [0, 32, 254, 255]
 
+    # Characters requiring special treatment
+    # TODO: implement
+    shade_chars = range(176,179)
+
+    box_char_base = 206
+    box_chars = range(179, 219)
+
+    fill_chars = range(219, 224)
+
+    pdb.gimp_context_set_foreground(gimpcolor.RGB(1.0, 1.0, 1.0, 1.0))
+
+    layer = pdb.gimp_layer_new(img, pdb.gimp_image_width(img),
+                pdb.gimp_image_height(img), GRAYA_IMAGE, "Background",
+                softening, NORMAL_MODE)
+    pdb.gimp_image_insert_layer(img, layer, None, -1)
+    pdb.gimp_edit_bucket_fill_full(layer, FG_BUCKET_FILL, NORMAL_MODE, 100,
+            255, False, True, SELECT_CRITERION_COMPOSITE, 0, 0)
+
+
     for i in xrange(256):
         if i in excepts:
             continue
 
         layer = pdb.gimp_text_layer_new(img, chars[i],
-                font, size * 3/4, gimpenums.UNIT_POINT)
+                font, size * 3/4, UNIT_POINT)
         pdb.gimp_image_insert_layer(img, layer, None, -1)
         pdb.gimp_layer_translate(layer, (i % 16) * size, math.floor(i / 16.0) * size)
         w = pdb.gimp_drawable_width(layer)
         pdb.gimp_layer_translate(layer, (size - w) / 2.0, 0)
-        pdb.gimp_text_layer_set_color(layer, gimpcolor.RGB(0.0, 0.0, 0.0, 1.0))
-        pdb.gimp_invert(layer)
         pdb.gimp_progress_update(i / 255.0)
+
+        if i == box_char_base:
+            char_pixel_height = layer.height
 
     pdb.gimp_image_grid_set_spacing(img, size, size)
 
@@ -66,7 +85,9 @@ register(
         "RGB*, GRAY*",
         [
             (PF_FONT, "font", "Font", "DejaVu Sans Mono"),
-            (PF_INT, "size", "Tile size (px)", 72)
+            (PF_INT, "size", "Tile size (px)", 72),
+            (PF_SLIDER, "softening", "Background opacity", 20, (0.0, 100.0,
+                1.0))
             ],
         [],
         generate_tileset)
