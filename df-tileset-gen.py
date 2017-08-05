@@ -7,7 +7,8 @@ import math
 
 gettext.install("gimp20-python", gimp.locale_directory, unicode=True)
 
-def draw_shade_char(img, layer, size, density, x, y):
+def draw_shade_char(img, layer, density, x, y):
+    size = layer.height
     for j in xrange(4):
         for k in xrange(j % 4, size, 4):
             pdb.gimp_image_select_rectangle(img, CHANNEL_OP_REPLACE,
@@ -50,7 +51,8 @@ def draw_shade_char(img, layer, size, density, x, y):
         layer = pdb.gimp_image_merge_down(img, copy4, CLIP_TO_BOTTOM_LAYER)
     pdb.gimp_selection_none(img)
 
-def draw_fill_char(img, layer, size, index, x, y):
+def draw_fill_char(img, layer, index, x, y):
+    size = layer.height
     if index == 0:
         pdb.gimp_image_select_rectangle(img, CHANNEL_OP_REPLACE,
                 x, y, size, size)
@@ -70,15 +72,134 @@ def draw_fill_char(img, layer, size, index, x, y):
                 255, False, True, SELECT_CRITERION_COMPOSITE, 0, 0)
     pdb.gimp_selection_none(img)
 
+def draw_box_char(img, layer, char, x, y):
+    width = 4
+    def draw_vert_line(top, length, hollow):
+        cx = layer.width / 2
+        cy = layer.height / 2
+        if (hollow):
+            pdb.gimp_image_select_rectangle(img, CHANNEL_OP_REPLACE,
+                    x + cx - 3 * width / 2, top, 3 * width, length)
+            pdb.gimp_edit_bucket_fill_full(layer, FG_BUCKET_FILL, NORMAL_MODE, 
+                    100, 255, False, True, SELECT_CRITERION_COMPOSITE, 0, 0)
+        pdb.gimp_image_select_rectangle(img, CHANNEL_OP_REPLACE,
+                x + cx - width / 2, top, width, length)
+        if (hollow):
+            pdb.gimp_edit_clear(layer)
+        else:
+            pdb.gimp_edit_bucket_fill_full(layer, FG_BUCKET_FILL, NORMAL_MODE, 
+                    100, 255, False, True, SELECT_CRITERION_COMPOSITE, 0, 0)
+        pdb.gimp_selection_none(img)
+
+    def draw_horiz_line(left, length, hollow):
+        cx = layer.width / 2
+        cy = layer.height / 2
+        if (hollow):
+            pdb.gimp_image_select_rectangle(img, CHANNEL_OP_REPLACE,
+                    left, y + cy - 3 * width / 2, length, 3 * width)
+            pdb.gimp_edit_bucket_fill_full(layer, FG_BUCKET_FILL, NORMAL_MODE, 
+                    100, 255, False, True, SELECT_CRITERION_COMPOSITE, 0, 0)
+        pdb.gimp_image_select_rectangle(img, CHANNEL_OP_REPLACE,
+                left, y + cy - width / 2, length, width)
+        if (hollow):
+            pdb.gimp_edit_clear(layer)
+        else:
+            pdb.gimp_edit_bucket_fill_full(layer, FG_BUCKET_FILL, NORMAL_MODE, 
+                    100, 255, False, True, SELECT_CRITERION_COMPOSITE, 0, 0)
+        pdb.gimp_selection_none(img)
+
+    def clear_vert_line(top, length):
+        cx = layer.width / 2
+        pdb.gimp_image_select_rectangle(img, CHANNEL_OP_REPLACE,
+                x + cx - width / 2, top, width, length)
+        pdb.gimp_edit_clear(layer)
+        pdb.gimp_selection_none(img)
+
+    def clear_horiz_line(top, length):
+        cy = layer.height / 2
+        pdb.gimp_image_select_rectangle(img, CHANNEL_OP_REPLACE,
+                left, y + cy - width / 2, length, width)
+        pdb.gimp_edit_clear(layer)
+        pdb.gimp_selection_none(img)
+
+    size = layer.height
+    temp_layer = pdb.gimp_layer_copy(layer, False)
+    pdb.gimp_image_insert_layer(img, temp_layer, None, -1)
+    pdb.gimp_layer_resize(temp_layer, size, size, 0, 0)
+
+#    "│","┤","╡","╢","╖","╕","╣","║","╗","╝","╜","╛","┐",
+#    "└","┴","┬","├","─","┼","╞","╟","╚","╔","╩","╦","╠","═","╬","╧",
+#    "╨","╤","╥","╙","╘","╒","╓","╫","╪","┘","┌"
+
+    # Single vert line
+    if (char == "│" or char == "┤" or char == "╡" or char == "├" or
+            char == "┼" or char == "╞" or char == "╪"):
+        draw_vert_line(y, layer.height, False)
+
+    # Double vert line
+    if (char == "╢" or char == "╣" or char == "║" or char == "╟" or
+            char == "╠" or char == "╬" or char == "╫"):
+        draw_vert_line(y, layer.height, True)
+
+    # Single vert top half
+    if (char == "╛" or char == "└" or char == "┴" or char == "╧" or
+            char == "╘" or char == "┘"):
+        draw_vert_line(y, layer.height / 2, False)
+
+    # Double vert top half
+    if (char == "╝" or char == "╜" or char == "╚" or char == "╩" or
+            char == "╨" or char == "╙"):
+        draw_vert_line(y, layer.height / 2, True)
+
+    # Single vert bottom half
+    if (char == "╕" or char == "┐" or char == "┬" or char == "╤" or
+            char == "╒" or char == "┌"):
+        draw_vert_line(y + layer.height / 2, layer.height, False)
+
+    # Double vert bottom half
+    if (char == "╖" or char == "╗" or char == "╔" or char == "╦" or
+            char == "╥" or char == "╓"):
+        draw_vert_line(y + layer.height / 2, layer.height, True)
+
+    # Single horiz line
+    if (char == "┴" or char == "┬" or char == "─" or char == "┼" or
+            char == "╨" or char == "╥" or char == "╫"):
+        draw_horiz_line(x, layer.width, False)
+
+    # Double horiz line
+    if (char == "╩" or char == "╦" or char == "═" or char == "╬" or
+            char == "╧" or char == "╤" or char == "╪"):
+        draw_horiz_line(x, layer.width, True)
+
+    # Single horiz left half
+    if (char == "┤" or char == "╢" or char == "╖" or char == "╜" or
+            char == "┐" or char == "┘"):
+        draw_horiz_line(x, layer.width / 2, False)
+
+    # Double horiz left half
+    if (char == "╡" or char == "╕" or char == "╣" or char == "╗" or
+            char == "╝" or char == "╛"):
+        draw_horiz_line(x, layer.width / 2, True)
+
+    # Single horiz right half
+    if (char == "└" or char == "├" or char == "╟" or char == "╙" or
+            char == "╓" or char == "┌"):
+        draw_horiz_line(x + layer.width / 2, layer.width, False)
+
+    # Double horiz right half
+    if (char == "╞" or char == "╚" or char == "╔" or char == "╠" or
+            char == "╘" or char == "╒"):
+        draw_horiz_line(x + layer.width / 2, layer.width, True)
+
+
+    layer = pdb.gimp_image_merge_down(img, temp_layer, CLIP_TO_BOTTOM_LAYER)
+
 def get_cell_width(img, font, height, square):
     if(square):
         return height
     layer = pdb.gimp_text_layer_new(img, "M",
             font, height * 3/4, UNIT_POINT)
-    pdb.gimp_image_insert_layer(img, layer, None, -1)
-    width = pdb.gimp_drawable_width(layer)
-    pdb.gimp_image_remove_layer(img, layer)
-    return width
+    return layer.width + 2
 
 def generate_tileset(cur_img, drawable, font, height, softening, square):
 
@@ -111,14 +232,11 @@ def generate_tileset(cur_img, drawable, font, height, softening, square):
     # Characters requiring special treatment
     # TODO: implement
     shade_chars = range(176,179)
-
-    box_char_base = 206
     box_chars = range(179, 219)
-
     fill_chars = range(219, 224)
+    bottom_aligns = [243]
 
     pdb.gimp_context_set_foreground(gimpcolor.RGB(1.0, 1.0, 1.0, 1.0))
-
 
     layer = pdb.gimp_layer_new(img, pdb.gimp_image_width(img),
                 pdb.gimp_image_height(img), GRAYA_IMAGE, "Background",
@@ -139,31 +257,38 @@ def generate_tileset(cur_img, drawable, font, height, softening, square):
                         100, NORMAL_MODE)
             pdb.gimp_image_insert_layer(img, layer, None, -1)
             pdb.gimp_layer_translate(layer, x, y)
-            draw_shade_char(img, layer, height, i - shade_chars[0], x, y)
+            draw_shade_char(img, layer, i - shade_chars[0], x, y)
             pdb.gimp_progress_update(i / 255.0)
             continue
         if i in range(179, 219):
-            pdb.gimp_progress_update(i / 255.0)
+            layer = pdb.gimp_layer_new(img, width, height, GRAYA_IMAGE, chars[i],
+                        100, NORMAL_MODE)
+            pdb.gimp_image_insert_layer(img, layer, None, -1)
+            pdb.gimp_layer_translate(layer, x, y)
+            draw_box_char(img, layer, chars[i], x, y)
             continue
         if i in fill_chars:
             layer = pdb.gimp_layer_new(img, width, height, GRAYA_IMAGE, chars[i],
                         100, NORMAL_MODE)
             pdb.gimp_image_insert_layer(img, layer, None, -1)
             pdb.gimp_layer_translate(layer, x, y)
-            draw_fill_char(img, layer, height, i - fill_chars[0], x, y)
+            draw_fill_char(img, layer, i - fill_chars[0], x, y)
             pdb.gimp_progress_update(i / 255.0)
             continue
 
         layer = pdb.gimp_text_layer_new(img, chars[i],
-                font, height * 3/4, UNIT_POINT)
+                font, height * 3.0/4.0, UNIT_PIXEL)
         pdb.gimp_image_insert_layer(img, layer, None, -1)
+        if (layer.width > width):
+            new_height = height * width / layer.width
+            pdb.gimp_text_layer_set_font_size(layer, new_height * 3.0/4.0,
+                    UNIT_PIXEL)
+            pdb.gimp_layer_translate(layer, 0, (height - new_height) / 2)
         pdb.gimp_layer_translate(layer, x, y)
-        w = pdb.gimp_drawable_width(layer)
-        pdb.gimp_layer_translate(layer, (width - w) / 2.0, 0)
+        pdb.gimp_layer_translate(layer, (width - layer.width) / 2.0, 0)
+        if i in bottom_aligns:
+            pdb.gimp_layer_translate(layer, 0, height - layer.height)
         pdb.gimp_progress_update(i / 255.0)
-
-        if i == box_char_base:
-            char_pixel_height = layer.height
 
     pdb.gimp_image_grid_set_spacing(img, width, height)
 
