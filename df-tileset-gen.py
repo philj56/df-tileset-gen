@@ -70,11 +70,21 @@ def draw_fill_char(img, layer, size, index, x, y):
                 255, False, True, SELECT_CRITERION_COMPOSITE, 0, 0)
     pdb.gimp_selection_none(img)
 
+def get_cell_width(img, font, height, square):
+    if(square):
+        return height
+    layer = pdb.gimp_text_layer_new(img, "M",
+            font, height * 3/4, UNIT_POINT)
+    pdb.gimp_image_insert_layer(img, layer, None, -1)
+    width = pdb.gimp_drawable_width(layer)
+    pdb.gimp_image_remove_layer(img, layer)
+    return width
 
-def generate_tileset(cur_img, drawable, font, size, softening):
+def generate_tileset(cur_img, drawable, font, height, softening, square):
 
     gimp.context_push()
-    img = pdb.gimp_image_new(16 * size, 16 * size, GRAY)
+    width = get_cell_width(cur_img, font, height, square)
+    img = pdb.gimp_image_new(16 * width, 16 * height, GRAY)
     img.undo_group_start()
     pdb.gimp_progress_init("Generating tileset...", None);
 
@@ -109,6 +119,7 @@ def generate_tileset(cur_img, drawable, font, size, softening):
 
     pdb.gimp_context_set_foreground(gimpcolor.RGB(1.0, 1.0, 1.0, 1.0))
 
+
     layer = pdb.gimp_layer_new(img, pdb.gimp_image_width(img),
                 pdb.gimp_image_height(img), GRAYA_IMAGE, "Background",
                 softening, NORMAL_MODE)
@@ -121,44 +132,45 @@ def generate_tileset(cur_img, drawable, font, size, softening):
         if i in excepts:
             pdb.gimp_progress_update(i / 255.0)
             continue
-        x = (i % 16) * size
-        y = math.floor(i / 16.0) * size
+        x = (i % 16) * width
+        y = math.floor(i / 16.0) * height
         if i in shade_chars:
-            layer = pdb.gimp_layer_new(img, size, size, GRAYA_IMAGE, chars[i],
+            layer = pdb.gimp_layer_new(img, width, height, GRAYA_IMAGE, chars[i],
                         100, NORMAL_MODE)
             pdb.gimp_image_insert_layer(img, layer, None, -1)
             pdb.gimp_layer_translate(layer, x, y)
-            draw_shade_char(img, layer, size, i - shade_chars[0], x, y)
+            draw_shade_char(img, layer, height, i - shade_chars[0], x, y)
             pdb.gimp_progress_update(i / 255.0)
             continue
         if i in range(179, 219):
             pdb.gimp_progress_update(i / 255.0)
             continue
         if i in fill_chars:
-            layer = pdb.gimp_layer_new(img, size, size, GRAYA_IMAGE, chars[i],
+            layer = pdb.gimp_layer_new(img, width, height, GRAYA_IMAGE, chars[i],
                         100, NORMAL_MODE)
             pdb.gimp_image_insert_layer(img, layer, None, -1)
             pdb.gimp_layer_translate(layer, x, y)
-            draw_fill_char(img, layer, size, i - fill_chars[0], x, y)
+            draw_fill_char(img, layer, height, i - fill_chars[0], x, y)
             pdb.gimp_progress_update(i / 255.0)
             continue
 
         layer = pdb.gimp_text_layer_new(img, chars[i],
-                font, size * 3/4, UNIT_POINT)
+                font, height * 3/4, UNIT_POINT)
         pdb.gimp_image_insert_layer(img, layer, None, -1)
         pdb.gimp_layer_translate(layer, x, y)
         w = pdb.gimp_drawable_width(layer)
-        pdb.gimp_layer_translate(layer, (size - w) / 2.0, 0)
+        pdb.gimp_layer_translate(layer, (width - w) / 2.0, 0)
         pdb.gimp_progress_update(i / 255.0)
 
         if i == box_char_base:
             char_pixel_height = layer.height
 
-    pdb.gimp_image_grid_set_spacing(img, size, size)
+    pdb.gimp_image_grid_set_spacing(img, width, height)
 
     img.undo_group_end()
     pdb.gimp_display_new(img)
     gimp.context_pop()
+
 
 register(
         "python_fu_df_tileset",
@@ -171,9 +183,10 @@ register(
         "RGB*, GRAY*",
         [
             (PF_FONT, "font", "Font", "DejaVu Sans Mono"),
-            (PF_INT, "size", "Tile size (px)", 96),
+            (PF_INT, "height", "Tile height (px)", 96),
             (PF_SLIDER, "softening", "Background opacity", 20, (0.0, 100.0,
-                1.0))
+                1.0)),
+            (PF_BOOL, "square", "Square", False)
             ],
         [],
         generate_tileset)
